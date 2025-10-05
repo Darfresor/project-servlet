@@ -36,12 +36,20 @@ public class LogicServlet extends HttpServlet {
 
         // ставим крестик в ячейке, по которой кликнул пользователь
         field.getField().put(index, Sign.CROSS);
+        // Проверяем, не победил ли крестик после добавления последнего клика пользователя
+        if (checkWin(resp, currentSession, field)) {
+            return;
+        }
 
         // Получаем пустую ячейку поля
         int emptyFieldIndex = field.getEmptyFieldIndex();
 
         if (emptyFieldIndex >= 0) {
             field.getField().put(emptyFieldIndex, Sign.NOUGHT);
+            // Проверяем, не победил ли нолик после добавление последнего нолика
+            if (checkWin(resp, currentSession, field)) {
+                return;
+            }
         }
 
         // Считаем список значков
@@ -67,5 +75,27 @@ public class LogicServlet extends HttpServlet {
             throw new RuntimeException("Session is broken, try one more time");
         }
         return (Field) fieldAttribute;
+    }
+    /**
+     * Метод проверяет, нет ли трех крестиков/ноликов в ряд.
+     * Возвращает true/false
+     */
+    private boolean checkWin(HttpServletResponse response, HttpSession currentSession, Field field) throws IOException {
+        Sign winner = field.checkWin();
+        if (Sign.CROSS == winner || Sign.NOUGHT == winner) {
+            // Добавляем флаг, который показывает что кто-то победил
+            currentSession.setAttribute("winner", winner);
+
+            // Считаем список значков
+            List<Sign> data = field.getFieldData();
+
+            // Обновляем этот список в сессии
+            currentSession.setAttribute("data", data);
+
+            // Шлем редирект
+            response.sendRedirect("/index.jsp");
+            return true;
+        }
+        return false;
     }
 }
